@@ -6,9 +6,11 @@ from app.models.modelArticle import Article
 
 router = APIRouter()
 
-@router.post("/articles", summary="Insérer un article manuellement")
-def create_article(article: Article):
-    return controllerArticle.insert_article(article.dict())
+@router.get("/articles", response_model=List[Article])
+def list_all_articles():
+    return controllerArticle.get_all_articles()
+
+
 
 @router.get("/articles", response_model=List[Article])
 def list_articles_by_category(category: str = Query(..., description="Nom ou slug de la catégorie")):

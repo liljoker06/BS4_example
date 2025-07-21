@@ -5,6 +5,10 @@ from app.services.scraper import scrape_category_range
 db = get_database()
 collection = db["articles"]
 
+
+def get_all_articles():
+    return list(collection.find({}, {"_id": 0}))
+
 def insert_article(article_data: dict):
     collection.update_one(
         {"url": article_data["url"]},
