@@ -29,8 +29,9 @@ export default function ImportPage() {
     try {
       const res = await scrapeOneArticle(url)
       setMessage(res.message)
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Erreur lors du scraping.')
+    } catch (err) {
+      console.error("Erreur lors du scraping :", err)
+      setError('Erreur lors du scraping.')
     } finally {
       setLoading(false)
     }
@@ -42,8 +43,9 @@ export default function ImportPage() {
     try {
       const res = await scrapeRange(category, startPage, endPage, limit || undefined)
       setMessage(`${res.count} articles importés.`)
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Erreur lors de l’import.')
+    } catch (err) {
+      console.error("Erreur lors du scraping de la plage :", err)
+      setError('Erreur lors de l’import.')
     } finally {
       setLoading(false)
     }

@@ -1,0 +1,11 @@
+**/__pycache__/
+**/node_modules
+**/.next
+**/.env*
+**/.vscode/
+**/.idea/
+**/.git/
+**/*.log
+**/tests
+docker-compose.override.yml
+README.md

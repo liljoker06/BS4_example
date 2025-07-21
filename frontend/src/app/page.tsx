@@ -30,7 +30,7 @@ export default function Home() {
       a.title.toLowerCase().includes(search.toLowerCase()) ||
       a.summary?.toLowerCase().includes(search.toLowerCase())
 
-    const articleDate = new Date(a.date)
+    const articleDate = a.date ? new Date(a.date) : new Date()
     const matchStart = startDate ? articleDate >= startDate : true
     const matchEnd = endDate ? articleDate <= endDate : true
 
