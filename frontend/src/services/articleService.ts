@@ -41,6 +41,12 @@ export const scrapeRange = async (
 
 // GET /articles
 export const getAllArticles = async (): Promise<Article[]> => {
-  const res = await api.get('/articles')
-  return res.data
+  try {
+    const res = await api.get('/articles')
+    console.log("Réponse reçue :", res.data)
+    return res.data
+  } catch (error) {
+    console.error("Erreur Axios : ", error)
+    throw error
+  }
 }
