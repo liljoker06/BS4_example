@@ -5,6 +5,7 @@ import { getAllArticles } from '@/services/articleService'
 import ArticleCard from '@/components/ArticleCard'
 import { Article } from '@/types/article'
 import { useSearch } from '@/context/SearchContext'
+import CustomDatePicker from '@/components/CustomDatePicker'
 
 export default function Home() {
   const [articles, setArticles] = useState<Article[]>([])
@@ -12,9 +13,11 @@ export default function Home() {
   const { search } = useSearch()
   const router = useRouter()
 
-  // Pagination
   const [currentPage, setCurrentPage] = useState(1)
   const [perPage, setPerPage] = useState(6)
+
+  const [startDate, setStartDate] = useState<Date | null>(null)
+  const [endDate, setEndDate] = useState<Date | null>(null)
 
   useEffect(() => {
     getAllArticles()
@@ -22,11 +25,17 @@ export default function Home() {
       .finally(() => setLoading(false))
   }, [])
 
-  const filteredArticles = articles.filter(
-    (a) =>
+  const filteredArticles = articles.filter((a) => {
+    const matchSearch =
       a.title.toLowerCase().includes(search.toLowerCase()) ||
       a.summary?.toLowerCase().includes(search.toLowerCase())
-  )
+
+    const articleDate = new Date(a.date)
+    const matchStart = startDate ? articleDate >= startDate : true
+    const matchEnd = endDate ? articleDate <= endDate : true
+
+    return matchSearch && matchStart && matchEnd
+  })
 
   const totalPages = Math.ceil(filteredArticles.length / perPage)
   const paginatedArticles = filteredArticles.slice(
@@ -41,8 +50,8 @@ export default function Home() {
   }
 
   useEffect(() => {
-    setCurrentPage(1) // reset page quand on recherche
-  }, [search, perPage])
+    setCurrentPage(1)
+  }, [search, perPage, startDate, endDate])
 
   if (loading) {
     return (
@@ -70,29 +79,43 @@ export default function Home() {
 
   return (
     <div className="p-4">
-      {/* Header pagination */}
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-2">
-        <p className="text-gray-700">
-          {filteredArticles.length} article(s) trouvé(s)
-        </p>
-        <div className="flex items-center gap-2">
-          <label className="text-sm">Articles par page :</label>
-          <select
-            value={perPage}
-            onChange={(e) => {
-              setPerPage(Number(e.target.value))
-              setCurrentPage(1)
-            }}
-            className="border px-2 py-1 rounded text-sm"
-          >
-            {[3, 6, 9, 12].map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+{/* Pagination + Filtres */}
+<div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-8">
+
+  {/* Infos & pagination */}
+  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+    <p className="text-gray-800 font-medium">
+      {filteredArticles.length} article(s) trouvé(s)
+    </p>
+
+    <div className="flex items-center gap-2">
+      <label className="text-sm">Articles par page :</label>
+      <select
+        value={perPage}
+        onChange={(e) => setPerPage(Number(e.target.value))}
+        className="border border-gray-300 px-3 py-1.5 rounded text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+      >
+        {[3, 6, 9, 12].map((n) => (
+          <option key={n} value={n}>{n}</option>
+        ))}
+      </select>
+    </div>
+  </div>
+
+  {/* Filtres de dates */}
+  <div className="flex flex-wrap gap-4 items-center">
+    <div>
+      <label className="text-sm block mb-1 text-gray-700">Date de début :</label>
+      <CustomDatePicker value={startDate} onChange={setStartDate} />
+    </div>
+    <div>
+      <label className="text-sm block mb-1 text-gray-700">Date de fin :</label>
+      <CustomDatePicker value={endDate} onChange={setEndDate} />
+    </div>
+  </div>
+</div>
+
+
 
       {/* Grid */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -101,7 +124,7 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Pagination buttons */}
+      {/* Pagination */}
       {totalPages > 1 && (
         <div className="mt-6 flex justify-center items-center gap-4">
           <button
