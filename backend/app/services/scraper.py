@@ -8,24 +8,20 @@ from app.database import get_database
 db = get_database()
 collection = db["articles"]
 
-
-#fonction pour extraire le slug de la sous-catégorie
-def parse_subcat_slug(subcat: str) -> str|None:
-
-    match = re.search(r'/dossier/([^/]+)/', subcat)
+# Fonction pour extraire le slug de la catégorie
+def parse_category_slug(cat: str) -> str | None:
+    match = re.search(r'/dossier/([^/]+)/', cat)
     if match:
         return match.group(1)
-    if "/" not in subcat or subcat.strip():
-        return subcat.strip()
+    if "/" not in cat or cat.strip():
+        return cat.strip()
     return None
 
-
-#fonction pour nettoyer le texte
+# Fonction pour nettoyer le texte
 def clean_text(text: str) -> str:
     return ' '.join(text.split()).strip()
 
-
-# fonciton pour extraire les données d'un article depuis une URL
+# Fonction pour extraire les données d'un article depuis une URL
 def extract_article_data(url: str) -> dict | None:
     print(f"Scraping {url}")
     try:
@@ -49,9 +45,9 @@ def extract_article_data(url: str) -> dict | None:
     og_image = soup.find('meta', property='og:image')
     thumbnail = og_image['content'] if og_image else None
 
-    # 3. Sous-catégorie depuis .cats-list > .cat[data-cat]
+    # 3. Catégorie principale
     cat_span = soup.select_one('div.cats-list span.cat')
-    subcategory = cat_span['data-cat'] if cat_span and cat_span.has_attr('data-cat') else None
+    categories = cat_span['data-cat'] if cat_span and cat_span.has_attr('data-cat') else None
 
     # 4. Résumé (meta description)
     meta_desc = soup.find('meta', attrs={'name': 'description'})
@@ -61,46 +57,53 @@ def extract_article_data(url: str) -> dict | None:
     time_tag = soup.find('time', class_='entry-date')
     date = time_tag['datetime'].split('T')[0] if time_tag and time_tag.has_attr('datetime') else None
 
-    # 6. Auteur (via span.byline a)
+    # 6. Auteur
     author_tag = soup.select_one("span.byline a")
     author = author_tag.text.strip() if author_tag else None
 
-    # 7. Tags / sous-catégories (ul.tags-list li a)
+    # 7. Tags (autres sous-catégories)
     tags_list = []
     tags_section = soup.select("ul.tags-list li a.post-tags")
     if tags_section:
         tags_list = [tag.text.strip() for tag in tags_section if tag.text.strip()]
 
-    # 8. Contenu principal (entry-content)
+    # 8. Contenu principal
     content_section = soup.find('div', class_='entry-content')
     content = ''
     if content_section:
         elements = content_section.find_all(['p', 'h2', 'h3', 'ul', 'li'])
         content = '\n'.join([clean_text(el.get_text()) for el in elements])
 
-    # 9. Images avec légendes (figure > img + figcaption) + vérif HTTPS
+    # 9. Images (URLs HTTPS uniquement, sans SVG, uniquement jpg/png/webp/jpeg)
     images = []
+    allowed_extensions = ('.jpg', '.jpeg', '.png', '.webp')
     if content_section:
         for figure in content_section.find_all('figure'):
             img = figure.find('img')
-            caption = figure.find('figcaption')
             if img:
                 src = img.get('src') or img.get('data-src')
-                alt = img.get('alt') or ''
-                legend = clean_text(caption.text) if caption else clean_text(alt)
-                if src:
-                    # Forcer HTTPS
-                    if src.startswith('//'):
-                        src = 'https:' + src
-                    elif src.startswith('http:'):
-                        src = src.replace('http:', 'https:')
-                    images.append({'url': src, 'alt': legend})
+                if not src:
+                    continue
+
+                # Forcer HTTPS
+                if src.startswith('//'):
+                    src = 'https:' + src
+                elif src.startswith('http:'):
+                    src = src.replace('http:', 'https:')
+
+                # Exclure si pas HTTPS ou mauvaise extension
+                if not src.startswith('https://'):
+                    continue
+                if not src.lower().endswith(allowed_extensions):
+                    continue
+
+                images.append(src)
 
     return {
         'url': url,
         'title': title,
         'thumbnail': thumbnail,
-        'subcategory': subcategory,
+        'categories': categories,
         'summary': summary,
         'date': date,
         'author': author,
@@ -109,18 +112,17 @@ def extract_article_data(url: str) -> dict | None:
         'images': images
     }
 
-
-# scraping d'une plage de pages
-def scrape_subcategory_range(
-    subcat: str,
+# Scraping d'une plage de pages de catégorie
+def scrape_category_range(
+    category: str,
     start_page: int = 1,
     end_page: int = 1,
     articles_limit: int | None = None
 ) -> list[dict]:
     base = "https://www.blogdumoderateur.com"
-    slug = parse_subcat_slug(subcat)
+    slug = parse_category_slug(category)
     if not slug:
-        print(f"Impossible de parser le slug depuis '{subcat}'")
+        print(f"Impossible de parser le slug depuis '{category}'")
         return []
 
     prefix = f"{base}/dossier/{slug}"
@@ -140,7 +142,6 @@ def scrape_subcategory_range(
         soup = BeautifulSoup(resp.content, "html.parser")
         links = []
 
-        
         for a in soup.select("header.entry-header a"):
             href = a.get("href")
             if not href:
