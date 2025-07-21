@@ -1,0 +1,21 @@
+# dossier venv 
+venv/
+# dossier de dépendances
+node_modules/
+
+# dossier pycache
+__pycache__/
+
+# fichiers de log
+*.log
+# fichiers temporaires
+*.tmp
+# fichiers de configuration
+*.config
+# fichiers de sauvegarde
+*.bak
+# fichiers de cache
+.cache/
+
+# dossier de build
+build/
