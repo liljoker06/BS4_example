@@ -74,7 +74,7 @@ Projet réalisé dans le cadre d’un TP visant à scraper les articles du site 
 ### 1. Cloner le projet
 
 ```bash
-git clone https://github.com/tonuser/tp-scraping-blogduweb.git
+git clone https://github.com/liljoker06/BS4_example.git
 cd tp-scraping-blogduweb
 ```
 
